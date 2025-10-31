@@ -19,6 +19,8 @@ public class UserV1Dto {
         String userId,
         @NotBlank(message = "email은 필수입니다.")
         String email,
+        @NotBlank(message = "gender는 필수입니다.")
+        String gender,
         @NotBlank(message = "birthDate는 필수입니다.")
         String birthDate
     ) {}

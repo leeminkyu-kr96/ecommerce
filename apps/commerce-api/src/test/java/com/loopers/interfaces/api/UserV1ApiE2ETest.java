@@ -69,6 +69,7 @@ class UserV1ApiE2ETest {
             UserV1Dto.SignupRequest request = new UserV1Dto.SignupRequest(
                 "user123",
                 "user123@example.com",
+                "male",
                 "1999-01-01"
             );
 
@@ -87,14 +88,15 @@ class UserV1ApiE2ETest {
             );
         }
 
-        @DisplayName("회원 가입 시에 필수 필드가 없을 경우, 400 Bad Request 응답을 반환한다.")
+        @DisplayName("회원 가입 시에 성별이 없을 경우, 400 Bad Request 응답을 반환한다.")
         @Test
         void throwsBadRequest_whenRequiredFieldIsMissing() {
-            // arrange - birthDate 필드를 null로 설정
+            // arrange - gender 필드를 null로 설정
             UserV1Dto.SignupRequest request = new UserV1Dto.SignupRequest(
                 "user123",
                 "user123@example.com",
-                null
+                null,
+                "1999-01-01"
             );
 
             // act
