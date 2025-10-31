@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-
 @SpringBootTest
 class UserServiceIntegrationTest {
 
@@ -44,10 +43,10 @@ class UserServiceIntegrationTest {
     }
 
     /*
-    - [ ]  회원 가입시 User 저장이 수행된다. ( spy 검증 )
-    - [ ]  이미 가입된 ID 로 회원가입 시도 시, 실패한다.
-    - [ ]  해당 ID 의 회원이 존재할 경우, 회원 정보가 반환된다.
-    - [ ]  해당 ID 의 회원이 존재하지 않을 경우, null 이 반환된다.
+     * - [ ] 회원 가입시 User 저장이 수행된다. ( spy 검증 )
+     * - [ ] 이미 가입된 ID 로 회원가입 시도 시, 실패한다.
+     * - [ ] 해당 ID 의 회원이 존재할 경우, 회원 정보가 반환된다.
+     * - [ ] 해당 ID 의 회원이 존재하지 않을 경우, null 이 반환된다.
      */
 
     @DisplayName("회원가입")
@@ -68,13 +67,12 @@ class UserServiceIntegrationTest {
             verify(userRepository, times(1)).save(any(UserModel.class));
 
             assertAll(
-                () -> assertThat(user).isNotNull(),
-                () -> assertThat(user.getId()).isNotNull(),
-                () -> assertThat(user.getUserId()).isEqualTo("userId1"),
-                () -> assertThat(user.getEmail()).isEqualTo("user123@user.com"),
-                () -> assertThat(user.getBirthDate()).isEqualTo("1999-01-01")
-            );
-            
+                    () -> assertThat(user).isNotNull(),
+                    () -> assertThat(user.getId()).isNotNull(),
+                    () -> assertThat(user.getUserId()).isEqualTo("userId1"),
+                    () -> assertThat(user.getEmail()).isEqualTo("user123@user.com"),
+                    () -> assertThat(user.getBirthDate()).isEqualTo("1999-01-01"));
+
         }
 
         @DisplayName("이미 가입된 ID 로 회원가입 시도 시, 실패한다.")
@@ -118,15 +116,15 @@ class UserServiceIntegrationTest {
 
         @DisplayName("해당 ID 의 회원이 존재하지 않을 경우, null 이 반환된다.")
         @Test
-        void throwsException_whenInvalidUserIdIsProvided() {
+        void returnsNull_whenInvalidUserIdIsProvided() {
             // arrange
             UserModel userModel = new UserModel("userId1", "user123@user.com", "1999-01-01");
 
             // act
-            CoreException exception = assertThrows(CoreException.class, () -> userService.getUser(userModel.getUserId()));
+            UserModel result = userService.getUser(userModel.getUserId());
 
             // assert
-            assertThat(exception.getErrorType()).isEqualTo(ErrorType.NOT_FOUND);
+            assertThat(result).isNull();
         }
     }
 }

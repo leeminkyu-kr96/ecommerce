@@ -16,8 +16,7 @@ public class UserService {
 
      @Transactional(readOnly = true)
      public UserModel getUser(String userId) {
-         return userRepository.find(userId)
-             .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, null));
+         return userRepository.find(userId).orElse(null);
      }
 
     @Transactional

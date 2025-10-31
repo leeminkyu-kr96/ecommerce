@@ -9,6 +9,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public interface UserV1ApiSpec {
 
     @Operation(
+        summary = "유저 회원가입",
+        description = "새로운 유저를 회원가입합니다."
+    )
+    ApiResponse<UserV1Dto.UserResponse> signup(
+        @Schema(name = "회원가입 요청", description = "회원가입할 유저의 정보")
+        UserV1Dto.SignupRequest request
+    );
+
+    @Operation(
         summary = "유저 조회",
         description = "ID로 유저를 조회합니다."
     )

@@ -1,8 +1,8 @@
 package com.loopers.interfaces.api;
 
-import com.loopers.domain.example.ExampleModel;
-import com.loopers.infrastructure.example.ExampleJpaRepository;
-import com.loopers.interfaces.api.example.ExampleV1Dto;
+import com.loopers.domain.user.UserModel;
+import com.loopers.domain.user.UserRepository;
+import com.loopers.interfaces.api.user.UserV1Dto;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,20 +26,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class UserV1ApiE2ETest {
 
-    private static final Function<Long, String> ENDPOINT_GET = id -> "/api/v1/examples/" + id;
+    private static final String ENDPOINT_SIGNUP = "/api/v1/users/signup";
+    private static final Function<String, String> ENDPOINT_GET = userId -> "/api/v1/users/" + userId;
 
     private final TestRestTemplate testRestTemplate;
-    private final ExampleJpaRepository exampleJpaRepository;
+    private final UserRepository userRepository;
     private final DatabaseCleanUp databaseCleanUp;
 
     @Autowired
     public UserV1ApiE2ETest(
         TestRestTemplate testRestTemplate,
-        ExampleJpaRepository exampleJpaRepository,
+        UserRepository userRepository,
         DatabaseCleanUp databaseCleanUp
     ) {
         this.testRestTemplate = testRestTemplate;
-        this.exampleJpaRepository = exampleJpaRepository;
+        this.userRepository = userRepository;
         this.databaseCleanUp = databaseCleanUp;
     }
 
@@ -48,42 +49,58 @@ class UserV1ApiE2ETest {
         databaseCleanUp.truncateAllTables();
     }
 
-    @DisplayName("GET /api/v1/examples/{id}")
+    /*
+    회원가입
+    - [x]  회원 가입이 성공할 경우, 생성된 유저 정보를 응답으로 반환한다.
+    - [x]  회원 가입 시에 필수 필드가 없을 경우, `400 Bad Request` 응답을 반환한다.
+
+    내 정보 조회
+    - [x]  내 정보 조회에 성공할 경우, 해당하는 유저 정보를 응답으로 반환한다.
+    - [x]  존재하지 않는 ID 로 조회할 경우, `404 Not Found` 응답을 반환한다.
+     */
+
+    @DisplayName("POST /api/v1/users/signup")
     @Nested
-    class Get {
-        @DisplayName("존재하는 예시 ID를 주면, 해당 예시 정보를 반환한다.")
+    class Signup {
+        @DisplayName("회원 가입이 성공할 경우, 생성된 유저 정보를 응답으로 반환한다.")
         @Test
-        void returnsExampleInfo_whenValidIdIsProvided() {
+        void returnsUserInfo_whenSignupIsSuccessful() {
             // arrange
-            ExampleModel exampleModel = exampleJpaRepository.save(
-                new ExampleModel("예시 제목", "예시 설명")
+            UserV1Dto.SignupRequest request = new UserV1Dto.SignupRequest(
+                "user123",
+                "user123@example.com",
+                "1999-01-01"
             );
-            String requestUrl = ENDPOINT_GET.apply(exampleModel.getId());
 
             // act
-            ParameterizedTypeReference<ApiResponse<ExampleV1Dto.ExampleResponse>> responseType = new ParameterizedTypeReference<>() {};
-            ResponseEntity<ApiResponse<ExampleV1Dto.ExampleResponse>> response =
-                testRestTemplate.exchange(requestUrl, HttpMethod.GET, new HttpEntity<>(null), responseType);
+            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<UserV1Dto.UserResponse>> response =
+                testRestTemplate.exchange(ENDPOINT_SIGNUP, HttpMethod.POST, new HttpEntity<>(request), responseType);
 
             // assert
             assertAll(
-                () -> assertTrue(response.getStatusCode().is2xxSuccessful()),
-                () -> assertThat(response.getBody().data().id()).isEqualTo(exampleModel.getId()),
-                () -> assertThat(response.getBody().data().name()).isEqualTo(exampleModel.getName()),
-                () -> assertThat(response.getBody().data().description()).isEqualTo(exampleModel.getDescription())
+                () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED),
+                () -> assertThat(response.getBody()).isNotNull(),
+                () -> assertThat(response.getBody().data().userId()).isEqualTo("user123"),
+                () -> assertThat(response.getBody().data().email()).isEqualTo("user123@example.com"),
+                () -> assertThat(response.getBody().data().birthDate()).isEqualTo("1999-01-01")
             );
         }
 
-        @DisplayName("숫자가 아닌 ID 로 요청하면, 400 BAD_REQUEST 응답을 받는다.")
+        @DisplayName("회원 가입 시에 필수 필드가 없을 경우, 400 Bad Request 응답을 반환한다.")
         @Test
-        void throwsBadRequest_whenIdIsNotProvided() {
-            // arrange
-            String requestUrl = "/api/v1/examples/나나";
+        void throwsBadRequest_whenRequiredFieldIsMissing() {
+            // arrange - birthDate 필드를 null로 설정
+            UserV1Dto.SignupRequest request = new UserV1Dto.SignupRequest(
+                "user123",
+                "user123@example.com",
+                null
+            );
 
             // act
-            ParameterizedTypeReference<ApiResponse<ExampleV1Dto.ExampleResponse>> responseType = new ParameterizedTypeReference<>() {};
-            ResponseEntity<ApiResponse<ExampleV1Dto.ExampleResponse>> response =
-                testRestTemplate.exchange(requestUrl, HttpMethod.GET, new HttpEntity<>(null), responseType);
+            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<UserV1Dto.UserResponse>> response =
+                testRestTemplate.exchange(ENDPOINT_SIGNUP, HttpMethod.POST, new HttpEntity<>(request), responseType);
 
             // assert
             assertAll(
@@ -91,17 +108,45 @@ class UserV1ApiE2ETest {
                 () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST)
             );
         }
+    }
 
-        @DisplayName("존재하지 않는 예시 ID를 주면, 404 NOT_FOUND 응답을 받는다.")
+    @DisplayName("GET /api/v1/users/{userId}")
+    @Nested
+    class GetUser {
+        @DisplayName("내 정보 조회에 성공할 경우, 해당하는 유저 정보를 응답으로 반환한다.")
         @Test
-        void throwsException_whenInvalidIdIsProvided() {
+        void returnsUserInfo_whenValidUserIdIsProvided() {
             // arrange
-            Long invalidId = -1L;
-            String requestUrl = ENDPOINT_GET.apply(invalidId);
+            UserModel userModel = userRepository.save(
+                new UserModel("user123", "user123@example.com", "1999-01-01")
+            );
+            String requestUrl = ENDPOINT_GET.apply(userModel.getUserId());
 
             // act
-            ParameterizedTypeReference<ApiResponse<ExampleV1Dto.ExampleResponse>> responseType = new ParameterizedTypeReference<>() {};
-            ResponseEntity<ApiResponse<ExampleV1Dto.ExampleResponse>> response =
+            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<UserV1Dto.UserResponse>> response =
+                testRestTemplate.exchange(requestUrl, HttpMethod.GET, new HttpEntity<>(null), responseType);
+
+            // assert
+            assertAll(
+                () -> assertTrue(response.getStatusCode().is2xxSuccessful()),
+                () -> assertThat(response.getBody()).isNotNull(),
+                () -> assertThat(response.getBody().data().userId()).isEqualTo(userModel.getUserId()),
+                () -> assertThat(response.getBody().data().email()).isEqualTo(userModel.getEmail()),
+                () -> assertThat(response.getBody().data().birthDate()).isEqualTo(userModel.getBirthDate())
+            );
+        }
+
+        @DisplayName("존재하지 않는 ID 로 조회할 경우, 404 Not Found 응답을 반환한다.")
+        @Test
+        void throwsNotFoundException_whenUserIdDoesNotExist() {
+            // arrange
+            String invalidUserId = "nonexistent";
+            String requestUrl = ENDPOINT_GET.apply(invalidUserId);
+
+            // act
+            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<UserV1Dto.UserResponse>> response =
                 testRestTemplate.exchange(requestUrl, HttpMethod.GET, new HttpEntity<>(null), responseType);
 
             // assert

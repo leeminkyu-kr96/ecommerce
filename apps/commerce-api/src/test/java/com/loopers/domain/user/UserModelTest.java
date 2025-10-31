@@ -46,7 +46,7 @@ class UserModelTest {
 
             // act
             CoreException result = assertThrows(CoreException.class, () -> {
-                new UserModel(userId, "user123123123", "1999-01-01");
+                new UserModel(userId, "user123@example.com", "1999-01-01");
             });
 
             //assert
@@ -107,9 +107,9 @@ class UserModelTest {
         //입력한 생년월일이 빈칸이거나 공백이면, User 객체 생성에 실패한다.
         @DisplayName("입력한 생년월일이 null이면, User 객체 생성에 실패한다.")
         @Test
-        void createsUserModel_whenBirthDateIsBlank() {
+        void createsUserModel_whenBirthDateIsNull() {
             // arrange
-            String birthDate = " ";
+            String birthDate = null;
             // act
             CoreException result = assertThrows(CoreException.class, () -> {
                 new UserModel("userId", "user123@example.com", birthDate);
